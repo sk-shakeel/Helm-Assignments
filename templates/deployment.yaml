@@ -1,0 +1,64 @@
+{{- range $config := .Values.deployments }}
+apiVersion: apps/v1
+{{- if eq $config.name "mysql" }}
+kind: StatefulSet
+{{- else }}
+kind: Deployment
+{{- end }}
+metadata:
+  name: {{ $config.name }}-deployment
+  labels:
+    type: {{ $config.labels.type }}
+spec:
+  replicas: {{ $config.replicaCount }}
+  {{- if eq $config.name "mysql" }}  
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: failure-domain.beta.kubernetes.io/zone
+            operator: NotIn
+            values:
+            - "us-east-2a"
+            - "us-east-2b"
+            - "us-east-2c"
+  {{- end }}  
+  selector:
+    matchLabels:
+      type: {{ $config.labels.app }}
+  template:
+    metadata:
+      name: {{ $config.name }}-pod
+      labels:
+        type: {{ $config.labels.app }}
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: {{ $config.containerName }}
+          image: "{{ $config.image.repository }}:{{ $config.image.tag }}"
+          env:
+            {{- toYaml $config.env | nindent 12 }}
+          {{- if ne $config.name "mysql" }}
+          envFrom:
+            - secretRef:
+                name: {{ $config.secName }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ $config.ports.containerPort }}
+              protocol: TCP
+          {{- if eq $config.name "mysql" }}
+          volumeMounts:
+          - mountPath: /var/lib/mysql
+            name: {{ $config.volumeName }}
+          {{- end }}
+      {{- if eq $config.name "mysql" }}  
+      volumes:
+         - name: {{ $config.volumeName }}
+           persistentVolumeClaim:
+             claimName: {{ $config.claimName }}
+      {{- end }}
+---
+{{- end }}

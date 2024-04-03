@@ -1,0 +1,393 @@
+# Default values for bcdevops.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+deployments:
+  - name: frontend
+    labels:
+      type: FED
+      app: frontend
+    replicaCount: 1
+    containerName: bcdevops-frontend
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-frontend
+      tag: 6
+    ports:
+      containerPort: 80
+    env:
+      - name: REACT_APP_API_BASE_URL
+        value: http://a16bc30b03fa941c8bb9a5442d279069-595633903.us-east-2.elb.amazonaws.com/
+      - name: REACT_APP_AUTH0_DOMAIN
+        value: "dev-172stydgrhtr1apk.us.auth0.com"
+      - name: REACT_APP_AUTH0_CLIENT_ID
+        value: "LpiMJhbguBCheum2WlPcy7vI85M6LpjQ"
+    secName: test-secret
+
+  - name: service-registry
+    labels:
+      type: BED-SR
+      app: service-registry
+    replicaCount: 1
+    containerName: bcdevops-backend-service-registry
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-backend-service-registry
+      tag: 18
+    ports:
+      containerPort: 8761
+    env: [] 
+    secName: test-secret
+
+  - name: cloud-gateway
+    labels:
+      type: BED-AG
+      app: cloud-gateway
+    replicaCount: 1
+    containerName: bcdevops-backend-cloud-gateway
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-backend-cloud-gateway
+      tag: 18
+    ports:
+      containerPort: 9191
+    env:
+      - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+        value: http://service-registry-svc:8761/eureka/
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://18.191.227.61 :30001/zemoso_diagnostics s
+    secName: test-secret
+
+  - name: address-service
+    labels:
+      type: BED-address-service
+      app: address-service
+    containerName: bcdevops-backend-address-service
+    replicaCount: 1
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-address-service
+      tag: 18
+    ports:
+      containerPort: 9001
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: address-service-svc
+    secName: common-secret
+        
+  - name: appointment-service
+    labels:
+      type: BED-appointment-service
+      app: appointment-service
+    replicaCount: 1
+    containerName: bcdevops-backend-appointment-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-appointment-service
+      tag: 18
+    ports:
+      containerPort: 9002
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: appointment-service-svc
+    secName: common-secret
+
+  - name: card-service
+    labels:
+      type: BED-card-service
+      app: card-service
+    replicaCount: 1
+    containerName: bcdevops-backend-card-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-card-service
+      tag: 18
+    ports:
+      containerPort: 9003
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: card-service-svc
+    secName: common-secret
+
+  - name: lab-service
+    labels:
+      type: BED-lab-service
+      app: lab-service
+    replicaCount: 1
+    containerName: bcdevops-backend-lab-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-lab-service
+      tag: 18
+    ports:
+      containerPort: 9004
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: lab-service-svc
+    secName: common-secret
+
+  - name: patient-service
+    labels:
+      type: BED-patient-service
+      app: patient-service
+    replicaCount: 1
+    containerName: bcdevops-backend-patient-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-patient-service
+      tag: 18
+    ports:
+      containerPort: 9005
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: patient-service-svc
+    secName: common-secret
+
+  - name: test-lab-service
+    labels:
+      type: BED-test-lab-service
+      app: test-lab-service
+    replicaCount: 1
+    containerName: bcdevops-backend-test-lab-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-test-lab-service
+      tag: 18
+    ports:
+      containerPort: 9006
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: test-lab-service-svc
+    secName: common-secret
+
+  - name: test-service
+    labels:
+      type: BED-test-service
+      app: test-service
+    replicaCount: 1
+    containerName: bcdevops-backend-test-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-test-service
+      tag: 18
+    ports:
+      containerPort: 9007
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: test-service-svc
+    secName: common-secret
+
+  - name: user-service
+    labels:
+      type: BED-user-service
+      app: user-service
+    replicaCount: 1
+    containerName: bcdevops-backend-user-service
+    image:
+      repository: ghcr.io/sk-shakeel/bcdevops-user-service
+      tag: 18
+    ports:
+      containerPort: 9008
+    env:
+        - name: EUREKA_INSTANCE_HOSTNAME
+          value: user-service-svc
+    secName: common-secret
+
+  - name: mysql
+    labels:
+      type: mysql-db
+      app: mysql
+    replicaCount: 2
+    containerName: mysql-image
+    image:
+      repository: mysql
+      tag: latest
+    ports:
+      containerPort: 3306
+    env:
+      - name: MYSQL_ROOT_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: database-secret
+            key: password
+    volumeName: mysql-volume
+    claimName: pvc-bcdevops
+    
+services:
+  - name: frontend-service
+    type: NodePort
+    port: 80
+    targetPort: 80
+    nodePort: 30005
+    app: frontend
+  
+  - name: mysql
+    type: NodePort
+    port: 3306
+    targetPort: 3306
+    nodePort: 30001
+    app: mysql
+
+  - name: service-registry
+    type: ClusterIP
+    port: 8761
+    targetPort: 8761
+    app: service-registry
+
+  - name: cloud-gateway
+    type: ClusterIP
+    port: 9191
+    targetPort: 9191
+    app: cloud-gateway
+
+  - name: address-service
+    type: ClusterIP
+    port: 9001
+    targetPort: 9001
+    app: address-service
+
+  - name: appointment-service
+    type: ClusterIP
+    port: 9002
+    targetPort: 9002
+    app: appointment-service
+
+  - name: card-service
+    type: ClusterIP
+    port: 9003
+    targetPort: 9003
+    app: card-service
+
+  - name: lab-service
+    type: ClusterIP
+    port: 9004
+    targetPort: 9004
+    app: lab-service
+
+  - name: patient-service
+    type: ClusterIP
+    port: 9005
+    targetPort: 9005
+    app: patient-service
+
+  - name: test-lab-service
+    type: ClusterIP
+    port: 9006
+    targetPort: 9006
+    app: test-lab-service
+
+  - name: test-service
+    type: ClusterIP
+    port: 9007
+    targetPort: 9007
+    app: test-service
+
+  - name: user-service
+    type: ClusterIP
+    port: 9008
+    targetPort: 9008
+    app: user-service
+
+
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  name: bc-devops-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /$
+            pathType: Exact
+            backend:
+              service:
+                name: service-registry-svc
+                port:
+                  number: 8761
+          - path: /(eureka)(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: service-registry-svc
+                port:
+                  number: 8761
+          - path: /
+            pathType: Prefix
+            backend:
+              service: 
+                name: cloud-gateway-svc
+                port:
+                  number: 9191
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

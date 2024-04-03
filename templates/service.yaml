@@ -1,0 +1,18 @@
+{{- range $config := .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $config.name }}-svc
+spec:
+  type: {{ $config.type }}
+  ports:
+    - port: {{ $config.port }}
+      targetPort: {{ $config.targetPort }}
+      protocol: TCP
+      {{- if eq $config.type "NodePort" }}
+      nodePort: {{ $config.nodePort }}
+      {{- end }}
+  selector:
+    type: {{ $config.app }}
+---
+{{- end }}
